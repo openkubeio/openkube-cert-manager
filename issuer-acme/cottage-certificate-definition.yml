@@ -1,0 +1,13 @@
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: le-crt
+  namespace: cottage
+spec:
+  secretName: tls-lets-secret
+  issuerRef:
+    kind: Issuer
+    name: letsencrypt
+  commonName: cottage.app.openkube.io
+  dnsNames:
+  - cottage.app.openkube.io

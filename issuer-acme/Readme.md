@@ -15,3 +15,29 @@ kubectl get all --namespace farmvilla
 kubectl get certificate -n farmvilla
 kubectl describe certificate -n farmvilla
 ```
+**Renewing your certificate**
+
+By default, Let’s Encrypt certificates expire every 90 days. Let’s Encrypt usually sends an e-mail (like the one above) to the address associated with the Certificate resource created in Kubernetes to remind the cluster admin to renew it. 
+
+- Check certificate status
+  ```
+  kubectl describe certificates le-crt -n cottage
+  ```
+- Delete the Certificate and Secret
+  ```
+  kubectl delete certificate le-crt  -n cottage
+  kubectl delete secret tls-lets-secret -n cottage
+  ```
+- Re-create the certificate in Kubernetes
+  ```
+  kubectl apply -f cottage-certificate-definition.yml
+  ```
+- Verify the new expiry dates
+  ```
+  kubectl describe certificates le-crt -n cottage
+  ```
+
+To keep with DevOps principles, we shouldn’t have to be running the above steps manually every time 
+rather let’s put it all together into a handy-dandy script: ***renew-cert.sh***
+
+  
