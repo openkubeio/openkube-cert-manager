@@ -1,0 +1,95 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: farmvilla
+---
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    # You must replace this email address with your own.
+    # Let's Encrypt will use this to contact you about expiring
+    # certificates, and issues related to your account.
+    email: pramode2009@gmail.com
+    # ACME server URL for Let’s Encrypt’s staging environment.
+    # The staging environment will not issue trusted certificates but is
+    # used to ensure that the verification process is working properly
+    # before moving to production
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    # Secret resource that will be used to store the account's private key.
+    privateKeySecretRef:
+      name: letsencrypt-issuer-account-key
+    # Add a single challenge solver, HTTP01 using nginx/haproxy/traefik
+    # Enable the HTTP-01 challenge provider
+    # you prove ownership of a domain by ensuring that a particular
+    # file is present at the domain
+    solvers:
+    - http01:
+        ingress:
+          class: haproxy
+---
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: farmvilla-ingress
+  namespace: farmvilla
+  annotations:
+    # kubernetes.io/ingress.class: "haproxy"
+    ingress.kubernetes.io/ssl-redirect: "true"
+    cert-manager.io/cluster-issuer: "letsencrypt-staging"
+    cert-manager.io/acme-challenge-type: "http01"
+spec:
+  tls:
+  - hosts: 
+    - farmvilla.app.openkube.io
+    secretName: tls-farmvilla-secret
+  rules:
+  - host: farmvilla.app.openkube.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: farmvilla-svc
+          servicePort: 80
+        
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: farmvilla
+  namespace: farmvilla
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: farmvilla
+  template:
+    metadata:
+      labels:
+        app: farmvilla
+    spec:
+      containers:
+      - name: farmvilla
+        image: nginxdemos/hello:plain-text
+        ports:
+        - containerPort: 80
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: farmvilla-svc
+  namespace: farmvilla
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: farmvilla

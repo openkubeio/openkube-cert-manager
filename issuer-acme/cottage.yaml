@@ -1,0 +1,104 @@
+apiVersion: v1
+kind: Namespace
+metadata:
+  name: cottage
+---
+
+apiVersion: cert-manager.io/v1
+kind: ClusterIssuer
+metadata:
+  name: letsencrypt-staging
+spec:
+  acme:
+    # You must replace this email address with your own.
+    # Let's Encrypt will use this to contact you about expiring
+    # certificates, and issues related to your account.
+    email: pramode2009@gmail.com
+    server: https://acme-staging-v02.api.letsencrypt.org/directory
+    privateKeySecretRef:
+      # Secret resource that will be used to store the account's private key.
+      name: example-issuer-account-key
+    # Add a single challenge solver, HTTP01 using nginx
+    solvers:
+    - http01:
+        ingress:
+          class: haproxy
+---
+
+apiVersion: cert-manager.io/v1alpha2
+kind: Certificate
+metadata:
+  name: le-crt
+  namespace: cottage
+spec:
+  secretName: tls-lets-secret
+  issuerRef:
+    kind: Issuer
+    name: letsencrypt
+  commonName: cottage.app.openkube.io
+  dnsNames:
+  - cottage.app.openkube.io
+---
+
+
+apiVersion: extensions/v1beta1
+kind: Ingress
+metadata:
+  name: cottage-ingress
+  namespace: cottage
+  annotations:
+    # kubernetes.io/ingress.class: "nginx"
+    ingress.kubernetes.io/ssl-redirect: "true"
+    # nginx.ingress.kubernetes.io/ssl-redirect: "true"
+    # nginx.ingress.kubernetes.io/force-ssl-redirect: "true"
+spec:
+  tls:
+  - hosts: 
+    - cottage.app.openkube.io
+    secretName: tls-lets-secret
+  rules:
+  - host: cottage.app.openkube.io
+    http:
+      paths:
+      - path: /
+        backend:
+          serviceName: cottage-svc
+          servicePort: 80
+        
+---
+
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: cottage
+  namespace: cottage
+spec:
+  replicas: 2
+  selector:
+    matchLabels:
+      app: cottage
+  template:
+    metadata:
+      labels:
+        app: cottage
+    spec:
+      containers:
+      - name: cottage
+        image: nginxdemos/hello:plain-text
+        ports:
+        - containerPort: 80
+---
+
+apiVersion: v1
+kind: Service
+metadata:
+  name: cottage-svc
+  namespace: cottage
+spec:
+  ports:
+  - port: 80
+    targetPort: 80
+    protocol: TCP
+    name: http
+  selector:
+    app: cottage
