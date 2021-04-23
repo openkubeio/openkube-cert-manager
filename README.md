@@ -7,9 +7,9 @@ It will ensure certificates are valid and up to date, and attempt to renew certi
 
 ### Documentation
 
->https://cert-manager.io/docs/installation/kubernetes/
+>https://cert-manager.io/docs/installation/kubernetes
 
->https://cert-manager.io/docs/configuration/
+>https://cert-manager.io/docs/configuration
 
 
 #### Stable Release
